@@ -1,0 +1,156 @@
+:root {
+  --off-white: #fff8e4;
+  --dark-purple: #48038c;
+  --light-blue: #d3fdff;
+  --purplish: #47028d;
+  --grayish-purple: #7f1b7f;
+}
+body {
+  font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
+  max-width: 90%;
+  margin: 0 auto 1em;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px;
+  background: var(--light-blue);
+  color: var(--dark-purple);
+  line-height: 1.5em;
+}
+
+main {
+  display: flex;
+  margin: 2em auto;
+}
+
+h1, h2, h3, h4, h5 {
+  margin: 0.7em 0;
+}
+h2:first-child,
+h3:first-child,
+h4:first-child,
+h5:first-child {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 2.5em
+}
+
+h2 {
+  font-size: 2em
+}
+
+h3 {
+  font-size: 1.2em
+}
+
+h5 {
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: #09f;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+select, button {
+  border: none;
+  padding: 0.7em 1em;
+  margin: 1em 1em 0 0;
+  background: var(--grayish-purple);
+  color: white;
+}
+select {
+  padding-right: 3em;
+  background-image: url(/img/caret-down.svg);
+  background-repeat: no-repeat;
+  background-position: right 1em bottom 0.6em;
+  -webkit-appearance: none;
+}
+input, input + label, button {
+  cursor: pointer;
+}
+
+h4 > select {
+  margin: 0;
+}
+
+
+.box {
+  display: inline-block;
+  padding: 0.7em;
+  border: 1px dashed var(--grayish-purple);
+}
+
+.instruct {
+  font-style: italic;
+  color: var(--grayish-purple);
+}
+
+
+.workflow-statuses {
+  list-style: none;
+  padding: 0;
+}
+.workflow-status {
+  display: grid;
+  grid-template-columns: 3fr 9fr;
+  margin: 1em 0;
+  padding: 0;
+}
+
+.status-transitions {
+  list-style: none;
+}
+.status-transition {
+  margin-bottom: 0.5em;
+}
+.status-transition:before {
+  content: "➡️";
+  display: inline-block;
+  left: -1em;
+  position: relative;
+}
+
+.status-name {
+  position: relative;
+  font-size: 0.8rem;
+  padding: 0.5em 0.7em;
+  top: -0.1em;
+
+  font-weight: 700;
+  color: var(--off-white);
+  background: var(--purplish);
+}
+.cond-name {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+}
+
+
+.simulator {
+  padding: 1em;
+}
+
+.users {
+  display: flex;
+}
+.user {
+  margin: 1em 1em 0 0;
+  padding: 1em;
+  background: var(--purplish);
+  color: var(--off-white);
+}
+.user:last-child {
+  margin-right: 0;
+}
+.post-simulation {
+  padding: 1em;
+  border: 1px solid grey;
+}
+.post-title {
+  margin-top: 0;
+}
