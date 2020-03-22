@@ -15,16 +15,16 @@
 
 (defonce templates {:anarchy (anarchy #{:draft :in-review :approved :published :deleted})
                     :standard {:draft [{:-> :in-review}
-                                       {:-> :published :if [:can-publish?]}
-                                       {:-> :deleted :if [:can-delete?]}]
-                               :in-review [{:-> :approved :if [:can-approve?]}
-                                           {:-> :published :if [:can-publish?]}
-                                           {:-> :deleted :if [:can-delete?]}]
-                               :approved [{:-> :published :if [:can-publish-approved?]}
-                                          {:-> :deleted :if [:can-delete?]}]
-                               :published [{:-> :draft :if [:can-unpublish?]}
-                                           {:-> :in-review :if [:can-unpublish?]}
-                                           {:-> :deleted :if [:can-delete?]}]
+                                       {:-> :published :if #{:can-publish?}}
+                                       {:-> :deleted :if #{:can-delete?}}]
+                               :in-review [{:-> :approved :if #{:can-approve?}}
+                                           {:-> :published :if #{:can-publish?}}
+                                           {:-> :deleted :if #{:can-delete?}}]
+                               :approved [{:-> :published :if #{:can-publish-approved?}}
+                                          {:-> :deleted :if #{:can-delete?}}]
+                               :published [{:-> :draft :if #{:can-unpublish?}}
+                                           {:-> :in-review :if #{:can-unpublish?}}
+                                           {:-> :deleted :if #{:can-delete?}}]
                                :deleted [{:-> :draft}]}})
 
 (defonce template-descriptions {:anarchy "Anyone can do anything, even if they don't have “permission.”"
@@ -75,6 +75,9 @@
 (defn transition! [status]
   (swap! appstate assoc-in [:posts @post-id :status] status))
 
+(defn delete-condition! [status-idx trans-idx condition]
+  (swap! appstate update-in [:flow status-idx trans-idx :if] disj condition))
+
 (defn readable [kw]
   (join " " (split (name kw) #"-")))
 
@@ -116,15 +119,18 @@
         templates)])
 
 
-(defn status-transition [j trans]
-  (let [{to :-> conditions :if} trans]
+(defn status-transition [trans]
+  (let [{to :-> conditions :if cond-click-partial :cond-click-partial} trans]
     [:li.status-transition
      [:span.status-name (name to)]
      (if (seq conditions)
        [:span.conditions
         [:i " if "]
         (map (fn [cnd]
-               [:span.cond-name (readable cnd)])
+               ^{:key (gensym)}
+               [:span.cond-name.remove {:on-click #(cond-click-partial cnd)
+                                        :title "Remove this condition"}
+                (readable cnd)])
              conditions)]
        [:i " unconditionally"])]))
 
@@ -135,16 +141,17 @@
     [:div.instruct "You are using the " (name @template) " template. " (@template template-descriptions)]]
    [:h3 "A user can transition a post..."]
    [:ul.workflow-statuses
-    (map-indexed (fn [i [status transitions]]
-                   ^{:key i}
-                   [:li.workflow-status
-                    [:h5 "From " [:span.status-name (name status)] " status ..."]
-                    [:ul.status-transitions
-                     (map-indexed (fn [j trans]
-                                    ^{:key j}
-                                    [status-transition j trans])
-                                  transitions)]])
-                 @flow)]])
+    (map (fn [[status transitions]]
+           ^{:key status}
+           [:li.workflow-status
+            [:h5 "From " [:span.status-name (name status)] " status..."]
+            [:ul.status-transitions
+             (map-indexed (fn [j trans]
+                            ^{:key j}
+                            [status-transition (merge trans
+                                                      {:cond-click-partial (partial delete-condition! status j)})])
+                          transitions)]])
+         @flow)]])
 
 
 (defn home-page []

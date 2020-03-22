@@ -20,6 +20,9 @@ main {
   display: flex;
   margin: 2em auto;
 }
+main > div {
+  margin: 0 1em 1em 0;
+}
 
 h1, h2, h3, h4, h5 {
   margin: 0.7em 0;
@@ -116,6 +119,7 @@ h4 > select {
 }
 
 .status-name {
+  display: inline-block;
   position: relative;
   font-size: 0.8rem;
   padding: 0.5em 0.7em;
@@ -128,6 +132,9 @@ h4 > select {
 .cond-name {
   text-decoration: underline;
   text-decoration-style: dashed;
+}
+.remove {
+  cursor: pointer;
 }
 
 
