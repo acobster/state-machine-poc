@@ -2,6 +2,7 @@
     (:require
      [state-machine-poc.fsm :as fsm]
      [clojure.string :refer [split join]]
+     [clojure.set :refer [difference]]
      [reagent.core :as r]
      [reagent.dom :as d]))
 
@@ -75,15 +76,35 @@
 (defn transition! [status]
   (swap! appstate assoc-in [:posts @post-id :status] status))
 
+(defn add-transition! [from to]
+  (swap! appstate update-in [:flow from] conj {:-> to}))
+
+(defn delete-transition! [status idx]
+  (swap! appstate update-in [:flow status] (fn [transitions]
+                                             (let [[before rest] (split-at idx transitions)]
+                                               (concat before (next rest))))))
+
 (defn delete-condition! [status-idx trans-idx condition]
   (swap! appstate update-in [:flow status-idx trans-idx :if] disj condition))
 
 (defn readable [kw]
   (join " " (split (name kw) #"-")))
 
+(defn transition-options [status]
+  (let [all-statuses (set (keys @flow))
+        ineligible (conj (set (map :-> (status @flow))) status)]
+    (difference all-statuses ineligible)))
+
+(defn imperative [status]
+  (status {:draft "Save as Draft"
+           :in-review "Send to Review"
+           :approved "Approve"
+           :published "Publish"
+           :deleted "Delete"}))
+
 
 (defn transition-button [to-status]
-  [:button {:on-click #(transition! to-status)} (name to-status)])
+  [:button {:on-click #(transition! to-status)} (imperative to-status)])
 
 (defn user [id u]
   [:div.user
@@ -120,7 +141,10 @@
 
 
 (defn status-transition [trans]
-  (let [{to :-> conditions :if cond-click-partial :cond-click-partial} trans]
+  (let [{to :->
+         conditions :if
+         cond-click-partial :cond-click-partial
+         on-click-delete :on-click-delete} trans]
     [:li.status-transition
      [:span.status-name (name to)]
      (when (seq conditions)
@@ -133,7 +157,9 @@
                 [:span.remove {:on-click #(cond-click-partial cnd)
                                :title "Remove this condition"}
                  "×"]])
-             conditions)])]))
+             conditions)])
+     [:span.delete-transition.remove {:title "Remove this transition"
+                                      :on-click on-click-delete} "×"]]))
 
 (defn workflow-vis []
   [:div.workflow-vis
@@ -147,11 +173,23 @@
            [:li.workflow-status
             [:span [:i "from "] [:span.status-name (name status)]]
             [:ul.status-transitions
-             (map-indexed (fn [j trans]
-                            ^{:key j}
-                            [status-transition (merge trans
-                                                      {:cond-click-partial (partial delete-condition! status j)})])
-                          transitions)]])
+             (map-indexed
+              (fn [j trans]
+                ^{:key j}
+                [status-transition
+                 (merge trans
+                        {:cond-click-partial (partial delete-condition! status j)
+                         :on-click-delete #(delete-transition! status j)})])
+              transitions)
+             [:li
+              [:select {:value ""
+                        :on-change #(add-transition! status (keyword (.. % -target -value)))}
+               [:option {:value ""} "Add transition..."]
+               (map (fn [to-status]
+                      ^{:key to-status}
+                      [:option {:value to-status}
+                       (name to-status)])
+                    (transition-options status))]]]])
          @flow)]])
 
 

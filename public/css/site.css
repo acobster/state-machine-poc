@@ -4,7 +4,7 @@
   --light-blue: #d3fdff;
   --purplish: #47028d;
   --grayish-purple: #7f1b7f;
-  --reddish: #f04f01;
+  --reddish: #9a1515;
 }
 body {
   font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
@@ -61,20 +61,23 @@ a:hover {
 }
 
 select, button {
-  border: none;
-  padding: 0.7em 1em;
+  border: 2px solid transparent;
+  padding: 0.3em 0.7em;
   margin: 1em 1em 0 0;
   background: var(--grayish-purple);
   color: white;
+}
+select:hover, button:hover {
+  border-color: lightpink;
 }
 select {
   padding-right: 3em;
   background-image: url(/img/caret-down.svg);
   background-repeat: no-repeat;
-  background-position: right 1em bottom 0.6em;
+  background-position: right 1em bottom 0.2em;
   -webkit-appearance: none;
 }
-input, input + label, button {
+select, input, input + label, button {
   cursor: pointer;
 }
 
@@ -113,6 +116,7 @@ h4 > select {
   list-style: none;
 }
 .status-transition {
+  position: relative;
   margin-bottom: 0.5em;
 }
 .status-transition:before {
@@ -143,6 +147,16 @@ h4 > select {
   position: absolute;
   color: var(--reddish);
   cursor: pointer;
+  font-weight: 700;
+  opacity: 0;
+}
+.status-transition:hover .remove {
+  opacity: 1;
+}
+
+.delete-transition {
+  position: absolute;
+  right: 1em;
 }
 
 
