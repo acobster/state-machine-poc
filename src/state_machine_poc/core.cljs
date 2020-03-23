@@ -123,16 +123,17 @@
   (let [{to :-> conditions :if cond-click-partial :cond-click-partial} trans]
     [:li.status-transition
      [:span.status-name (name to)]
-     (if (seq conditions)
+     (when (seq conditions)
        [:span.conditions
         [:i " if "]
         (map (fn [cnd]
                ^{:key (gensym)}
-               [:span.cond-name.remove {:on-click #(cond-click-partial cnd)
-                                        :title "Remove this condition"}
-                (readable cnd)])
-             conditions)]
-       [:i " unconditionally"])]))
+               [:span.condition
+                [:span.cond-name (readable cnd)]
+                [:span.remove {:on-click #(cond-click-partial cnd)
+                               :title "Remove this condition"}
+                 "×"]])
+             conditions)])]))
 
 (defn workflow-vis []
   [:div.workflow-vis
@@ -144,7 +145,7 @@
     (map (fn [[status transitions]]
            ^{:key status}
            [:li.workflow-status
-            [:h5 "From " [:span.status-name (name status)] " status..."]
+            [:span [:i "from "] [:span.status-name (name status)]]
             [:ul.status-transitions
              (map-indexed (fn [j trans]
                             ^{:key j}
