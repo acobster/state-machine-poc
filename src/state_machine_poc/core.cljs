@@ -154,7 +154,7 @@
          transition-conditions :if
          on-click-add-cond :on-click-add-cond
          on-click-delete-cond :on-click-delete-cond
-         on-click-delete #(js/console.log %)} trans]
+         on-click-delete :on-click-delete} trans]
     [:li.status-transition
      [:span.status-name (name to)]
      [:span.delete-transition.remove {:title "Remove this transition"
