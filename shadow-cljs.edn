@@ -1,0 +1,10 @@
+{:source-paths ["src"]
+
+ :dependencies [[reagent "0.8.1"]
+                [cider/cider-nrepl "0.21.1"]]
+
+ :builds {:app {:output-dir "public/js"
+                :target :browser
+                :modules {:app {:init-fn state-machine-poc.core/init!}}
+                :devtools {:http-root "public"
+                           :http-port 3001}}}}
