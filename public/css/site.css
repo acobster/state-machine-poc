@@ -111,10 +111,10 @@ h4 > select {
 .workflow-status:nth-child(odd) {
   background: lightblue;
 }
-.workflow-status select {
+.workflow-status .add-transition {
   opacity: 0;
 }
-.workflow-status:hover select {
+.workflow-status:hover .add-transition {
   opacity: 1;
 }
 
@@ -150,19 +150,25 @@ h4 > select {
   text-decoration-style: dashed;
 }
 .remove {
-  position: absolute;
+  margin-right: 0.3em;
   color: var(--reddish);
   cursor: pointer;
   font-weight: 700;
   opacity: 0;
 }
-.status-transition:hover .remove {
+.add-condition {
+  margin: 0 0.3em;
+  opacity: 0;
+}
+.status-transition:hover .remove,
+.status-transition:hover .add-condition {
   opacity: 1;
 }
 
 .delete-transition {
-  position: absolute;
-  right: 1em;
+  margin: 0 0.3em;
+  color: var(--off-white);
+  background: var(--dark-purple);
 }
 
 
