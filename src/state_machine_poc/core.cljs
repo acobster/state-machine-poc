@@ -52,6 +52,7 @@
                                                    :can-publish? false
                                                    :can-publish-approved? true
                                                    :can-unpublish? true}}]
+                           :conditions #{:can-approve? :can-delete? :can-publish-approved? :can-publish? :can-unpublish? :can-draft?}
                            :templates templates}))
 
 
@@ -61,6 +62,7 @@
 (def template (r/cursor appstate [:template]))
 (def post-id (r/cursor appstate [:currently-editing]))
 (def capabilities (r/cursor appstate [:users 0 :capabilities]))
+(def conditions (r/cursor appstate [:conditions]))
 
 (defn post [] (get-in @appstate [:posts @post-id]))
 
@@ -84,6 +86,10 @@
                                              (let [[before rest] (split-at idx transitions)]
                                                (concat before (next rest))))))
 
+(defn add-condition! [status-idx trans-idx condition]
+  (let [conj-to-set (comp set conj)]
+    (swap! appstate update-in [:flow status-idx trans-idx :if] conj-to-set condition)))
+
 (defn delete-condition! [status-idx trans-idx condition]
   (swap! appstate update-in [:flow status-idx trans-idx :if] disj condition))
 
@@ -94,6 +100,9 @@
   (let [all-statuses (set (keys @flow))
         ineligible (conj (set (map :-> (status @flow))) status)]
     (difference all-statuses ineligible)))
+
+(defn condition-options [current-conditions]
+  (difference @conditions current-conditions))
 
 (defn imperative [status]
   (status {:draft "Save as Draft"
@@ -142,33 +151,41 @@
 
 (defn status-transition [trans]
   (let [{to :->
-         conditions :if
-         cond-click-partial :cond-click-partial
-         on-click-delete :on-click-delete} trans]
+         transition-conditions :if
+         on-click-add-cond :on-click-add-cond
+         on-click-delete-cond :on-click-delete-cond
+         on-click-delete #(js/console.log %)} trans]
     [:li.status-transition
      [:span.status-name (name to)]
-     (when (seq conditions)
+     [:span.delete-transition.remove {:title "Remove this transition"
+                                      :on-click on-click-delete} "×"]
+     (when (seq transition-conditions)
        [:span.conditions
         [:i " if "]
         (map (fn [cnd]
                ^{:key (gensym)}
                [:span.condition
                 [:span.cond-name (readable cnd)]
-                [:span.remove {:on-click #(cond-click-partial cnd)
+                [:span.remove {:on-click #(on-click-delete-cond cnd)
                                :title "Remove this condition"}
                  "×"]])
-             conditions)])
-     [:span.delete-transition.remove {:title "Remove this transition"
-                                      :on-click on-click-delete} "×"]]))
+             transition-conditions)])
+     [:select.add-condition {:on-change #(on-click-add-cond (keyword (.. % -target -value)))}
+      [:option {:value ""} "Add a condition..."]
+      (map (fn [cnd]
+             ^{:key cnd}
+             [:option {:value cnd}
+              (name cnd)])
+           (condition-options transition-conditions))]]))
 
 
 (defn add-transition-select [status]
   (let [opts (transition-options status)]
     (when (seq opts)
       [:li
-       [:select {:value ""
-                 :on-change #(add-transition! status (keyword (.. % -target -value)))}
-        [:option {:value ""} "Add transition..."]
+       [:select.add-transition {:value ""
+                                :on-change #(add-transition! status (keyword (.. % -target -value)))}
+        [:option {:value ""} "Add a transition..."]
         (map (fn [to-status]
                ^{:key to-status}
                [:option {:value to-status}
@@ -193,7 +210,8 @@
                 ^{:key j}
                 [status-transition
                  (merge trans
-                        {:cond-click-partial (partial delete-condition! status j)
+                        {:on-click-add-cond (partial add-condition! status j)
+                         :on-click-delete-cond (partial delete-condition! status j)
                          :on-click-delete #(delete-transition! status j)})])
               transitions)
              [add-transition-select status]]])
