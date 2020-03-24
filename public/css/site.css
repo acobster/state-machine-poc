@@ -111,6 +111,12 @@ h4 > select {
 .workflow-status:nth-child(odd) {
   background: lightblue;
 }
+.workflow-status select {
+  opacity: 0;
+}
+.workflow-status:hover select {
+  opacity: 1;
+}
 
 .status-transitions {
   list-style: none;

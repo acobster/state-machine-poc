@@ -161,6 +161,21 @@
      [:span.delete-transition.remove {:title "Remove this transition"
                                       :on-click on-click-delete} "×"]]))
 
+
+(defn add-transition-select [status]
+  (let [opts (transition-options status)]
+    (when (seq opts)
+      [:li
+       [:select {:value ""
+                 :on-change #(add-transition! status (keyword (.. % -target -value)))}
+        [:option {:value ""} "Add transition..."]
+        (map (fn [to-status]
+               ^{:key to-status}
+               [:option {:value to-status}
+                (name to-status)])
+             opts)]])))
+
+
 (defn workflow-vis []
   [:div.workflow-vis
    [:div.box
@@ -181,15 +196,7 @@
                         {:cond-click-partial (partial delete-condition! status j)
                          :on-click-delete #(delete-transition! status j)})])
               transitions)
-             [:li
-              [:select {:value ""
-                        :on-change #(add-transition! status (keyword (.. % -target -value)))}
-               [:option {:value ""} "Add transition..."]
-               (map (fn [to-status]
-                      ^{:key to-status}
-                      [:option {:value to-status}
-                       (name to-status)])
-                    (transition-options status))]]]])
+             [add-transition-select status]]])
          @flow)]])
 
 
