@@ -14,6 +14,7 @@
                                          (map ->transition (disj statuses status)))})]
     (into {} (map ->status-transitions statuses))))
 
+;; TODO refactor transition lists from vectors to sets
 (defonce templates {:anarchy (anarchy #{:draft :in-review :approved :published :deleted})
                     :standard {:draft [{:-> :in-review}
                                        {:-> :published :if #{:can-publish?}}
@@ -33,7 +34,6 @@
 
 
 (defonce appstate (r/atom {:flow (:standard templates)
-                           :template :standard
                            :posts [{:status :draft
                                     :title "Example Post Title"}
                                    {:status :published
@@ -53,6 +53,8 @@
                                                    :can-publish-approved? true
                                                    :can-unpublish? true}}]
                            :conditions #{:can-approve? :can-delete? :can-publish-approved? :can-publish? :can-unpublish? :can-draft?}
+                           :template :standard
+                           :last-selected-template :standard
                            :templates templates}))
 
 
@@ -60,6 +62,7 @@
 
 (def flow (r/cursor appstate [:flow]))
 (def template (r/cursor appstate [:template]))
+(def last-selected-template (r/cursor appstate [:last-selected-template]))
 (def post-id (r/cursor appstate [:currently-editing]))
 (def capabilities (r/cursor appstate [:users 0 :capabilities]))
 (def conditions (r/cursor appstate [:conditions]))
@@ -73,25 +76,48 @@
   (swap! appstate (fn [state]
                     (-> state
                         (assoc :template tpl-name)
+                        (assoc :last-selected-template tpl-name)
                         (assoc :flow (tpl-name templates))))))
+
+(defn match-template [flow]
+  (get (zipmap (vals templates) (keys templates)) flow))
 
 (defn transition! [status]
   (swap! appstate assoc-in [:posts @post-id :status] status))
 
+
+
+;; Workflow updates
+
+
 (defn add-transition! [from to]
-  (swap! appstate update-in [:flow from] conj {:-> to}))
+  (swap! appstate (fn [state]
+                    (-> state
+                        (assoc :template (match-template (:flow state)))
+                        (update-in [:flow from] conj {:-> to})))))
 
 (defn delete-transition! [status idx]
-  (swap! appstate update-in [:flow status] (fn [transitions]
-                                             (let [[before rest] (split-at idx transitions)]
-                                               (concat before (next rest))))))
+  (swap! appstate (fn [state]
+                    (-> state
+                        (assoc :template (match-template (:flow state)))
+                        (update-in [:flow status] (fn [transitions]
+                                                    (let [[before rest] (split-at idx transitions)]
+                                                      (concat before (next rest)))))))))
 
 (defn add-condition! [status-idx trans-idx condition]
   (let [conj-to-set (comp set conj)]
-    (swap! appstate update-in [:flow status-idx trans-idx :if] conj-to-set condition)))
+    (swap! appstate (fn [state]
+                      (-> state
+                          (assoc :template (match-template (:flow state)))
+                          (update-in [:flow status-idx trans-idx :if] conj-to-set condition))))))
 
 (defn delete-condition! [status-idx trans-idx condition]
-  (swap! appstate update-in [:flow status-idx trans-idx :if] disj condition))
+  (swap! appstate (fn [state]
+                    (-> state
+                        (assoc :template (match-template (:flow state)))
+                        (update-in [:flow status-idx trans-idx :if] disj condition)))))
+
+
 
 (defn readable [kw]
   (join " " (split (name kw) #"-")))
@@ -143,6 +169,7 @@
 
 (defn template-dropdown []
   [:select {:default-value @template}
+   [:option {:value ""} "pick one..."]
    (map (fn [[tpl _]]
           ^{:key tpl}
           [:option {:on-click #(select-template! tpl)} (name tpl)])
@@ -197,7 +224,11 @@
   [:div.workflow-vis
    [:div.box
     [:h4 "Start with the " [template-dropdown] " workflow..."]
-    [:div.instruct "You are using the " (name @template) " template. " (@template template-descriptions)]]
+    (let [tpl (match-template @flow)]
+      (cond
+        tpl   [:div.instruct "You are using the " (name tpl) " template. " (tpl template-descriptions)]
+        @last-selected-template [:div.instruct "You are using a custom workflow based on the " @last-selected-template " template."]
+        :else [:div.instruct "No template selected"]))]
    [:h3 "A user can transition a post..."]
    [:ul.workflow-statuses
     (map (fn [[status transitions]]
