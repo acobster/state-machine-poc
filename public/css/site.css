@@ -105,7 +105,7 @@ h4 > select {
 }
 .workflow-status {
   display: grid;
-  grid-template-columns: 3fr 9fr;
+  grid-template-columns: 1fr 4fr;
   margin: 0;
   padding: 0.7em;
 }
