@@ -169,10 +169,7 @@
   (events/notify-post-deleted! (get-in @appstate [:posts 0]) appstate)
   (events/notify-post-deleted! (get-in @appstate [:posts 2]) appstate)
 
-  (collect-events :draft :deleted)
-
-  (map (fn [handler] (handler {:author 0 :title "Test"} appstate))
-       (collect-events :draft :deleted))
+  (fsm/collect-events @appstate :draft :deleted)
   
   ;;  
   )
