@@ -350,7 +350,9 @@
       [:div.instruct "Events are triggered by transitions."]
       (if (seq @events)
         [:<>
-         [:p "Last " (min (count @events) 5) " events:"]
+         [:p "Last " (if (> (count @events) 1)
+                       (str (min (count @events) 5) " events:")
+                       " event:")]
          [:ul.events
           (map-indexed (fn [i e]
                          ^{:key i}
