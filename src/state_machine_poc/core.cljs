@@ -94,17 +94,10 @@
 (defn match-template [flow]
   (get (zipmap (vals templates) (keys templates)) flow))
 
-(defn collect-events [old-status new-status]
-  (reduce (partial reduce conj)
-          #{}
-          [(get @triggers [:<- old-status])
-           (get @triggers [:-> new-status])
-           (get @triggers [old-status new-status])]))
-
 (defn transition! [new-status]
   (swap! appstate (fn [state]
                     (let [post (get-in state [:posts @post-id])
-                          handlers (collect-events (:status post) new-status)
+                          handlers (fsm/collect-events @appstate (:status post) new-status)
                           events (map #(% post new-status @appstate) handlers)]
                       (-> state
                           (update :events concat events)
