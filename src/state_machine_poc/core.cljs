@@ -28,10 +28,17 @@
                                :published [{:-> :draft :if #{:can-unpublish?}}
                                            {:-> :in-review :if #{:can-unpublish?}}
                                            {:-> :deleted :if #{:can-delete?}}]
-                               :deleted [{:-> :draft}]}})
+                               :deleted [{:-> :draft}]}
+                    :bureaucratic {:draft [{:-> :in-review}
+                                           {:-> :deleted :if #{:can-delete?}}]
+                                   :in-review [{:-> :approved :if #{:can-approve?}}]
+                                   :approved [{:-> :published :if #{:can-publish?}}]
+                                   :published [{:-> :draft :if #{:can-unpublish?}}]
+                                   :deleted [{:-> :draft}]}})
 
 (defonce template-descriptions {:anarchy "Anyone can do anything, even if they don't have “permission.”"
-                                :standard "This is a sensible default."})
+                                :standard "This is a sensible default."
+                                :bureaucratic "This process is simpler but less flexible."})
 
 
 (defonce appstate (r/atom {:flow (:standard templates)
