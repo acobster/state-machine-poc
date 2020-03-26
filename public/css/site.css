@@ -19,8 +19,9 @@ body {
 }
 
 main {
-  display: flex;
+  display: grid;
   margin: 2em auto;
+  grid-template-columns: repeat(auto-fit, minmax(35em, 1fr));
 }
 main > div {
   margin: 0 1em 1em 0;
@@ -28,6 +29,7 @@ main > div {
 
 h1, h2, h3, h4, h5 {
   margin: 0.7em 0;
+  line-height: 1.2;
 }
 h2:first-child,
 h3:first-child,
