@@ -192,8 +192,17 @@ h4 > select {
   padding: 1em;
   border: 1px solid grey;
 }
+.post-byline {
+  margin-bottom: 0.7em;
+}
+.post-simulation .status-name {
+  border: 1px solid var(--off-white);
+}
 .post-title {
   margin-top: 0;
+}
+.post-content {
+  margin-bottom: 0;
 }
 
 

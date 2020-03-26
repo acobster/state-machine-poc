@@ -35,16 +35,19 @@
 
 
 (defonce appstate (r/atom {:flow (:standard templates)
-                           :posts [{:status :draft
-                                    :title "Example Post Title"
-                                    :author 0}
-                                   {:status :published
+                           :posts [{:status :published
                                     :title "An Older Post"
-                                    :author 0}
+                                    :author 0
+                                    :content "Repellendus ea sed assumenda omnis."}
+                                   {:status :draft
+                                    :title "Example Post Title"
+                                    :author 0
+                                    :content "Lorem ipsum dolor sit amet."}
                                    {:status :deleted
                                     :title "Bob's Post"
-                                    :author 1}]
-                           :currently-editing 0
+                                    :author 1
+                                    :content "Dolore id labore ea dolor optio accusamus aliqua."}]
+                           :currently-editing 1
                            :users [{:name "Alice"
                                     :capabilities {:can-approve? true
                                                    :can-delete? true
@@ -204,32 +207,33 @@
   [:button {:on-click #(transition! to-status)} (imperative to-status)])
 
 (defn user [id u]
-  [:div.user
-   [:h3 "User: " (:name u)]
-   [:div
-    [:h4 "Permissions:"]
-    [:div.permission-simulation
-     (map (fn [[cap can?]]
-            (let [id-attr (str (name cap) "-" id)]
-              ^{:key cap}
-              [:div
-               [:input {:type "checkbox"
-                        :id id-attr
-                        :checked can?
-                        :on-change #(toggle-cap! id cap)}]
-               [:label {:for id-attr} (readable cap)]]))
-          (:capabilities u))]]
-   [:h4 "With the above permissions, " (:name u) " would see:"]
-   [:div.post-simulation
-    [:h4.post-title (get-in @appstate [:posts @post-id :title])]
-    [:div.post-byline [:i "by: " (get-in @appstate
-                                         [:users (get-in @appstate [:posts @post-id :author]) :name])]]
-    [:div.post-status "Status: " (get-in @appstate [:posts @post-id :status])]
-    [:div.post-actions
-     (map (fn [to-status]
-            ^{:key to-status}
-            [transition-button to-status])
-          (fsm/available :status (current-post) @flow (:capabilities u)))]]])
+  (let [{:keys [title status content author]} (current-post)]
+    [:div.user
+     [:h3 "User: " (:name u)]
+     [:div
+      [:h4 "Permissions:"]
+      [:div.permission-simulation
+       (map (fn [[cap can?]]
+              (let [id-attr (str (name cap) "-" id)]
+                ^{:key cap}
+                [:div
+                 [:input {:type "checkbox"
+                          :id id-attr
+                          :checked can?
+                          :on-change #(toggle-cap! id cap)}]
+                 [:label {:for id-attr} (readable cap)]]))
+            (:capabilities u))]]
+     [:h4 "With the above permissions, " (:name u) " would see:"]
+     [:div.post-simulation
+      [:h4.post-title (get-in @appstate [:posts @post-id :title])]
+      [:div.post-byline [:i "by: " (get-in @appstate [:users author :name])]]
+      [:div.status-name status]
+      [:div.post-actions
+       (map (fn [to-status]
+              ^{:key to-status}
+              [transition-button to-status])
+            (fsm/available :status (current-post) @flow (:capabilities u)))]
+      [:p.post-content content]]]))
 
 (defn template-dropdown []
   [:select {:default-value @template}
