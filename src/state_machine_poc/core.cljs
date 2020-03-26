@@ -96,8 +96,19 @@
                         (assoc :last-selected-template tpl-name)
                         (assoc :flow (tpl-name templates))))))
 
-(defn match-template [flow]
-  (get (zipmap (vals templates) (keys templates)) flow))
+(defn normalize-transitions [flow]
+  (into {} (map (fn [[status transitions]]
+                  [status (vec (sort-by :-> transitions))])
+                flow)))
+
+(defn match-template* [flow]
+  (let [flipped (into {} (map (fn [[tpl flow]]
+                                [(normalize-transitions flow) tpl])
+                              templates))]
+    (get flipped
+         (normalize-transitions flow))))
+
+(def match-template (memoize match-template*))
 
 (defn transition! [new-status]
   (swap! appstate (fn [state]
@@ -165,12 +176,26 @@
 
 
 (comment
-  
+
   (events/notify-post-deleted! (get-in @appstate [:posts 0]) appstate)
   (events/notify-post-deleted! (get-in @appstate [:posts 2]) appstate)
 
   (fsm/collect-events @appstate :draft :deleted)
-  
+
+  (normalize-transitions {:hello [{:-> :z} {:-> :a} {:-> :b}]
+                          :goodbye [{:-> :x} {:-> :y} {:-> :z}]})
+  ;; => {:hello [{:-> :a} {:-> :b} {:-> :z}], :goodbye [{:-> :x} {:-> :y} {:-> :z}]}
+
+  (into {} (map (fn [[nm flow]]
+                  [(normalize-transitions flow) nm])
+                templates))
+  ;; => {{:deleted [{:-> :approved} {:-> :draft} {:-> :in-review} {:-> :published}], :approved [{:-> :deleted} {:-> :draft} {:-> :in-review} {:-> :published}], :draft [{:-> :approved} {:-> :deleted} {:-> :in-review} {:-> :published}], :in-review [{:-> :approved} {:-> :deleted} {:-> :draft} {:-> :published}], :published [{:-> :approved} {:-> :deleted} {:-> :draft} {:-> :in-review}]} :anarchy, {:draft [{:-> :deleted, :if #{:can-delete?}} {:-> :in-review} {:-> :published, :if #{:can-publish?}}], :in-review [{:-> :approved, :if #{:can-approve?}} {:-> :deleted, :if #{:can-delete?}} {:-> :published, :if #{:can-publish?}}], :approved [{:-> :deleted, :if #{:can-delete?}} {:-> :published, :if #{:can-publish-approved?}}], :published [{:-> :deleted, :if #{:can-delete?}} {:-> :draft, :if #{:can-unpublish?}} {:-> :in-review, :if #{:can-unpublish?}}], :deleted [{:-> :draft}]} :standard}
+
+  (match-template @flow)
+
+  (get-in @appstate [:flow :draft])
+  (delete-transition! :draft 0)
+
   ;;  
   )
 
