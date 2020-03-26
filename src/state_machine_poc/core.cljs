@@ -1,6 +1,7 @@
 (ns state-machine-poc.core
     (:require
      [state-machine-poc.fsm :as fsm]
+     [state-machine-poc.events :as events]
      [clojure.string :refer [split join]]
      [clojure.set :refer [difference]]
      [reagent.core :as r]
@@ -18,7 +19,7 @@
 (defonce templates {:anarchy (anarchy #{:draft :in-review :approved :published :deleted})
                     :standard {:draft [{:-> :in-review}
                                        {:-> :published :if #{:can-publish?}}
-                                       {:-> :deleted :if #{:can-delete?}}]
+                                       {:-> :deleted :if #{:can-delete?} :events #{:post-deleted}}]
                                :in-review [{:-> :approved :if #{:can-approve?}}
                                            {:-> :published :if #{:can-publish?}}
                                            {:-> :deleted :if #{:can-delete?}}]
@@ -35,10 +36,14 @@
 
 (defonce appstate (r/atom {:flow (:standard templates)
                            :posts [{:status :draft
-                                    :title "Example Post Title"}
+                                    :title "Example Post Title"
+                                    :author 0}
                                    {:status :published
-                                    :title "An Older Post"}
-                                   {:status :deleted}]
+                                    :title "An Older Post"
+                                    :author 0}
+                                   {:status :deleted
+                                    :title "Bob's Post"
+                                    :author 1}]
                            :currently-editing 0
                            :users [{:name "Alice"
                                     :capabilities {:can-approve? true
@@ -55,7 +60,12 @@
                            :conditions #{:can-approve? :can-delete? :can-publish-approved? :can-publish? :can-unpublish? :can-draft?}
                            :template :standard
                            :last-selected-template :standard
-                           :templates templates}))
+                           :templates templates
+                           :triggers {[:-> :deleted] #{events/notify-author!}
+                                      [:-> :published] #{events/notify-author!}
+                                      [:-> :approved] #{events/notify-author!}
+                                      [:-> :in-review] #{events/notify-reviewers!}}
+                           :events []}))
 
 
 
@@ -66,6 +76,8 @@
 (def post-id (r/cursor appstate [:currently-editing]))
 (def capabilities (r/cursor appstate [:users 0 :capabilities]))
 (def conditions (r/cursor appstate [:conditions]))
+(def triggers (r/cursor appstate [:triggers]))
+(def events (r/cursor appstate [:events]))
 
 (defn post [] (get-in @appstate [:posts @post-id]))
 
@@ -82,8 +94,23 @@
 (defn match-template [flow]
   (get (zipmap (vals templates) (keys templates)) flow))
 
-(defn transition! [status]
-  (swap! appstate assoc-in [:posts @post-id :status] status))
+(defn collect-events [old-status new-status]
+  (reduce (partial reduce conj)
+          #{}
+          [(get @triggers [:<- old-status])
+           (get @triggers [:-> new-status])
+           (get @triggers [old-status new-status])]))
+
+(defn transition! [new-status]
+  (swap! appstate (fn [state]
+                    (let [post (get-in state [:posts @post-id])
+                          handlers (collect-events (:status post) new-status)
+                          events (map #(% post new-status @appstate) handlers)]
+                      (-> state
+                          (update :events concat events)
+                          (assoc-in [:posts @post-id :status] new-status))))))
+
+(reduce (partial reduce conj) #{} [#{:one :two} #{:three}])
 
 
 
@@ -138,6 +165,21 @@
            :deleted "Delete"}))
 
 
+
+(comment
+  
+  (events/notify-post-deleted! (get-in @appstate [:posts 0]) appstate)
+  (events/notify-post-deleted! (get-in @appstate [:posts 2]) appstate)
+
+  (collect-events :draft :deleted)
+
+  (map (fn [handler] (handler {:author 0 :title "Test"} appstate))
+       (collect-events :draft :deleted))
+  
+  ;;  
+  )
+
+
 (defn transition-button [to-status]
   [:button {:on-click #(transition! to-status)} (imperative to-status)])
 
@@ -160,6 +202,8 @@
    [:h4 "With the above permissions, " (:name u) " would see:"]
    [:div.post-simulation
     [:h4.post-title (get-in @appstate [:posts @post-id :title])]
+    [:div.post-byline [:i "by: " (get-in @appstate
+                                         [:users (get-in @appstate [:posts @post-id :author]) :name])]]
     [:div.post-status "Status: " (get-in @appstate [:posts @post-id :status])]
     [:div.post-actions
      (map (fn [to-status]
@@ -260,12 +304,31 @@
       (map-indexed (fn [i u]
                      ^{:key i}
                      [user i u])
-                   (:users @appstate))]]]])
+                   (:users @appstate))]
+     [:div.events-container
+      [:h4 "Events"]
+      [:div.instruct "Events are triggered by transitions."]
+      (if (seq @events)
+        [:<>
+         [:p "Last " (min (count @events) 5) " events:"]
+         [:ul.events
+          (map-indexed (fn [i e]
+                         ^{:key i}
+                         [:li.event
+                          (map (fn [[label value]]
+                                 ^{:key (gensym)}
+                                 [:<>
+                                  [:strong label ": "]
+                                  [:span value]
+                                  [:br]])
+                               e)])
+                       (take 5 (reverse @events)))]]
+        [:p "No events have been triggered."])]]]])
 
 ;; -------------------------
 ;; Initialize app
 
-(defn mount-root []
+(defn ^:dev/after-load mount-root []
   (d/render [home-page] (.getElementById js/document "app")))
 
 (defn init! []

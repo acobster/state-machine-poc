@@ -195,3 +195,16 @@ h4 > select {
 .post-title {
   margin-top: 0;
 }
+
+.events-container {
+  margin: 1em 0;
+}
+.events {
+  padding: 0;
+  list-style-type: none;
+}
+.event {
+  margin: 0.3em 0;
+  padding: 0.7em;
+  background: var(--light-blue);
+}
