@@ -19,7 +19,7 @@
 (defonce templates {:anarchy (anarchy #{:draft :in-review :approved :published :deleted})
                     :standard {:draft [{:-> :in-review}
                                        {:-> :published :if #{:can-publish?}}
-                                       {:-> :deleted :if #{:can-delete?} :events #{:post-deleted}}]
+                                       {:-> :deleted :if #{:can-delete?}}]
                                :in-review [{:-> :approved :if #{:can-approve?}}
                                            {:-> :published :if #{:can-publish?}}
                                            {:-> :deleted :if #{:can-delete?}}]
@@ -127,7 +127,7 @@
                         (assoc :template (match-template (:flow state)))
                         (update-in [:flow status] (fn [transitions]
                                                     (let [[before rest] (split-at idx transitions)]
-                                                      (concat before (next rest)))))))))
+                                                      (vec (concat before (next rest))))))))))
 
 (defn add-condition! [status-idx trans-idx condition]
   (let [conj-to-set (comp set conj)]
