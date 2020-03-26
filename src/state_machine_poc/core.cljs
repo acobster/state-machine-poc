@@ -232,7 +232,7 @@
             (:capabilities u))]]
      [:h4 "With the above permissions, " (:name u) " would see:"]
      [:div.post-simulation
-      [:h4.post-title (get-in @appstate [:posts @post-id :title])]
+      [:h4.post-title title]
       [:div.post-byline [:i "by: " (get-in @appstate [:users author :name])]]
       [:div.status-name status]
       [:div.post-actions
