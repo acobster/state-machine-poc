@@ -196,6 +196,24 @@ h4 > select {
   margin-top: 0;
 }
 
+
+.posts-nav {
+  display: grid;
+  margin: 0.7em 0;
+  padding: 0.7em;
+  grid-template-columns: 1fr 1fr;
+
+  background: var(--dark-purple);
+  color: var(--off-white);
+}
+.posts-nav span {
+  cursor: pointer;
+}
+.posts-nav div:last-child {
+  text-align: right;
+}
+
+
 .events-container {
   margin: 1em 0;
 }

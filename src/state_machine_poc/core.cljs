@@ -79,7 +79,12 @@
 (def triggers (r/cursor appstate [:triggers]))
 (def events (r/cursor appstate [:events]))
 
-(defn post [] (get-in @appstate [:posts @post-id]))
+(defn prev-post []
+  (get-in @appstate [:posts (dec @post-id)]))
+(defn current-post []
+  (get-in @appstate [:posts @post-id]))
+(defn next-post []
+  (get-in @appstate [:posts (inc @post-id)]))
 
 (defn toggle-cap! [user-id cap]
   (swap! appstate update-in [:users user-id :capabilities cap] not))
@@ -202,7 +207,7 @@
      (map (fn [to-status]
             ^{:key to-status}
             [transition-button to-status])
-          (fsm/available :status (post) @flow (:capabilities u)))]]])
+          (fsm/available :status (current-post) @flow (:capabilities u)))]]])
 
 (defn template-dropdown []
   [:select {:default-value @template}
@@ -298,6 +303,15 @@
                      ^{:key i}
                      [user i u])
                    (:users @appstate))]
+     [:nav.posts-nav
+      [:div
+       (when (prev-post)
+         [:span {:on-click #(swap! appstate update :currently-editing dec)}
+          "◀️ " (:title (prev-post))])]
+      [:div
+       (when (next-post)
+         [:span {:on-click #(swap! appstate update :currently-editing inc)}
+          (:title (next-post)) " ️▶️"])]]
      [:div.events-container
       [:h4 "Events"]
       [:div.instruct "Events are triggered by transitions."]
