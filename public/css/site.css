@@ -153,9 +153,16 @@ h4 > select {
 .remove {
   margin-right: 0.3em;
   color: var(--reddish);
+  border: 2px solid transparent;
   cursor: pointer;
   font-weight: 700;
   opacity: 0;
+}
+.remove:hover {
+  border-color: var(--violet);
+}
+.condition .remove {
+  border-style: dotted;
 }
 .add-condition {
   margin: 0 0.3em;
