@@ -5,6 +5,7 @@
   --purplish: #47028d;
   --grayish-purple: #7f1b7f;
   --reddish: #9a1515;
+  --violet: #ab80c8;
 }
 body {
   font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
@@ -68,7 +69,7 @@ select, button {
   color: white;
 }
 select:hover, button:hover {
-  border-color: lightpink;
+  border-color: var(--violet);
 }
 select {
   padding-right: 3em;
